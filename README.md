@@ -1,36 +1,156 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quiz app — Article Quiz Generator
 
-## Getting Started
+Нийтлэл оруулаад **Gemini AI**-аар хураангуйлж, автоматаар **quiz** үүсгэн шалгах веб апп.
 
-First, run the development server:
+## Технологи
+
+| Хэсэг | Технологи |
+|--------|-----------|
+| Frontend | Next.js (App Router), React, Tailwind CSS |
+| Auth | Clerk (email / Google) |
+| Backend API | Next.js `app/api/` |
+| ORM / DB | Prisma + PostgreSQL |
+| AI | Google Gemini |
+| Deploy | Vercel-д тохиромжтой |
+
+## Гол боломжууд
+
+1. **Нэвтрэх / бүртгүүлэх** — Clerk (имэйл, Google)
+2. **Нийтлэл оруулах** — гарчиг + текст
+3. **Хураангуйлах** — Gemini summary, PostgreSQL-д хадгална
+4. **Quiz үүсгэх** — максимум 5 олон сонголттой асуулт
+5. **Quiz өгөх** — оноо, зөв/буруу хариулт харна
+6. **History** — sidebar-д өмнөх нийтлэлүүд
+7. **Хэл солих** — EN | MN
+
+## Суулгах
+
+```bash
+cd quiz
+npm install
+```
+
+### Environment хувьсагч
+
+`.env.example`-ийг хуулж `.env.local` үүсгэ:
+
+```bash
+cp .env.example .env.local
+```
+
+Дараах утгуудыг бөглөнө:
+
+| Хувьсагч | Тайлбар |
+|----------|---------|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
+| `CLERK_SECRET_KEY` | Clerk secret key |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
+
+Сонголттой:
+
+```bash
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+### Өгөгдлийн сан
+
+```bash
+npx prisma migrate deploy
+# эсвэл хөгжүүлэлтэд:
+npx prisma migrate dev
+
+npx prisma generate
+```
+
+Түр Prisma Postgres (24ц):
+
+```bash
+npx create-db create -r ap-southeast-1 -e .env.local -t 24h
+npx prisma migrate deploy
+```
+
+### Ажиллуулах
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Апп: [http://localhost:3000](http://localhost:3000)
+- Prisma Studio: `npx prisma studio` → [http://localhost:5555](http://localhost:5555)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Хэрэглэх заавар
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. `/sign-in` эсвэл `/sign-up` — нэвтэрнэ
+2. `/home` — нийтлэлийн гарчиг, текст оруулна
+3. **Generate summary / Хураангуйлах** — AI summary үүснэ
+4. **Create quiz / Take a quiz** — 5 асуулттай тест
+5. Үр дүн дээр зөв хариулт, оноо харна
+6. Sidebar **History** — өмнөх нийтлэл рүү буцна
+7. Header дээр **EN | MN** — хэл солино
 
-## Learn More
+## API
 
-To learn more about Next.js, take a look at the following resources:
+| Method | Path | Тайлбар |
+|--------|------|---------|
+| `GET` | `/api/articles` | Хэрэглэгчийн нийтлэлүүдийн жагсаалт |
+| `POST` | `/api/articles` | Нийтлэл үүсгэх |
+| `GET` / `POST` | `/api/article/[articleId]` | Нэг нийтлэл авах |
+| `POST` | `/api/generate` | Summary үүсгэж хадгалах |
+| `GET` / `POST` | `/api/article/[articleId]/quizzes` | Quiz авах / үүсгэх |
+| `POST` | `/api/article/[articleId]/quizzes/[quizId]/attempt` | Хариулт илгээх, оноо |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Бүх API Clerk session шаардана.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Өгөгдлийн загвар (Prisma)
 
-## Deploy on Vercel
+- **User** — `clerkId`, email, name
+- **Article** — title, content, summary
+- **Quiz** — article-тай холбоотой
+- **QuizQuestion** — question, options[], correctIndex
+- **QuizAttempt** — answers[], score
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Schema: `prisma/schema.prisma`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Төслийн бүтэц
+
+```
+quiz/
+├── app/
+│   ├── api/                 # Backend API
+│   ├── article/[id]/        # Summary, quiz, result
+│   ├── home/                # Нийтлэл оруулах
+│   ├── sign-in/ sign-up/    # Clerk auth
+│   ├── page.tsx             # Landing
+│   └── layout.tsx
+├── components/              # AppShell, LanguageToggle, UI
+├── lib/
+│   ├── api.ts               # Frontend API client
+│   ├── auth-user.ts         # Clerk → DB user
+│   ├── gemini.ts            # Summary + quiz AI
+│   ├── prisma.ts
+│   └── i18n/                # EN / MN орчуулга
+└── prisma/
+    ├── schema.prisma
+    └── migrations/
+```
+
+## Скриптүүд
+
+```bash
+npm run dev          # хөгжүүлэлтийн сервер
+npm run build        # production build
+npm run start        # production сервер
+npm run db:migrate   # prisma migrate dev
+npm run db:push      # schema push
+```
+
+## Анхаарах зүйлс
+
+- `create-db`-ийн түр DB **~24 цагийн** дараа устана. Урт хугацаанд Neon / Prisma claim / өөрийн Postgres ашигла.
+- `GEMINI_API_KEY` байхгүй бол summary/quiz үүсэхгүй.
+- DB унтарсан үед `Can't reach database server at db.prisma.io` гэсэн алдаа гарна — шинэ `DATABASE_URL` тавьж migrate дахин хий.
+
+## Figma
+
+Дизайн лавлагаа: [Quiz app (4C)](https://www.figma.com/design/GwdkdRnqbHYbyvVmFPowoz/Quiz-app--4C-)
