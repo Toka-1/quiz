@@ -4,12 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "node ./scripts/check-database-url.mjs && prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "postinstall": "prisma generate"
+    "postinstall": "DATABASE_URL=\"${DATABASE_URL:-postgresql://prisma:prisma@127.0.0.1:5432/prisma}\" prisma generate"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.4",

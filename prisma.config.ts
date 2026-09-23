@@ -1,7 +1,12 @@
-// Prisma CLI config. Avoid env() helper so `prisma generate` works
-// on Vercel even before DATABASE_URL is required at runtime.
+// Prisma CLI config. Keep generate working when DATABASE_URL is unset
+// during install; migrate/build still need a real URL on Vercel.
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+
+const databaseUrl =
+  process.env.DATABASE_URL?.trim() ||
+  // Placeholder only for `prisma generate` — never used for real queries.
+  "postgresql://prisma:prisma@127.0.0.1:5432/prisma?schema=public";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -10,6 +15,6 @@ export default defineConfig({
   },
   engine: "classic",
   datasource: {
-    url: process.env.DATABASE_URL,
+    url: databaseUrl,
   },
 });
